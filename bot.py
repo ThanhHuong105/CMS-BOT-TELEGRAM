@@ -4,21 +4,24 @@ import requests
 app = Flask(__name__)
 
 TELEGRAM_API_TOKEN = "7925656043:AAEbWFSv7_9WlWi78Hxw6Z5jigY2KgvAeg4"
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbylzS50Un2l80D8DW-Nopypl9D0mAMZNoR_TArNXYb9CLk1XVAYQtifPVu-BrPAVXT2Og/exec"
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxyz/exec"  # URL từ Apps Script
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["POST"])
 def webhook():
-    if request.method == "POST":
-        data = request.json
-        # Forward data to Google Apps Script
-        response = requests.post(WEBHOOK_URL, json=data)
-        return {"status": "forwarded", "response": response.json()}
-    return "Bot is running!"
+    # Nhận dữ liệu từ Telegram
+    data = request.json
+    print("Nhận dữ liệu từ Telegram:", data)
 
-# Set webhook
+    # Chuyển dữ liệu đến Google Apps Script
+    response = requests.post(WEBHOOK_URL, json=data)
+    print("Phản hồi từ Apps Script:", response.json())
+
+    return {"status": "success", "message": "Đã chuyển dữ liệu tới Apps Script."}
+
 def set_webhook():
     url = f"https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/setWebhook"
-    response = requests.post(url, data={"url": "https://your-railway-url.up.railway.app/"})
+    webhook_url = "https://your-railway-url.up.railway.app/"  # Railway URL của bạn
+    response = requests.post(url, data={"url": webhook_url})
     print(response.json())
 
 if __name__ == "__main__":
