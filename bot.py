@@ -53,11 +53,19 @@ async def hashtags(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'media' in data:
         caption = f"📋 *Bản xem trước:*\n📝 *Tiêu đề*: {data['title']}\n🔖 *Hashtags*: {data['hashtags']}"
         data['media'].caption = caption
-        await update.message.reply_media_group([data['media']])
+        
+        # Gửi bản xem trước với caption
+        try:
+            await update.message.reply_media_group([data['media']])
+        except Exception as e:
+            print(f"Lỗi khi gửi media: {e}")
+            await update.message.reply_text("⚠️ Gửi bản xem trước thất bại. Vui lòng thử lại!")
+            return HASHTAGS  # Quay lại nhập hashtags nếu lỗi
     else:
-        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện.")
-        return HASHTAGS  # Quay lại nhập hashtags nếu lỗi
+        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện. Vui lòng gửi lại!")
+        return CONTENT_IMAGE
 
+    # Chuyển sang bước xác nhận
     await update.message.reply_text("✅ Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
     return CONFIRM
 
