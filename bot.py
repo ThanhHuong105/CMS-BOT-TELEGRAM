@@ -48,6 +48,9 @@ async def content_image(update, context):
         data['media'] = InputMediaPhoto(update.message.photo[-1].file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
     elif update.message.video:
         data['media'] = InputMediaVideo(update.message.video.file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
+    elif update.message.document:
+        await update.message.reply_text("\u26a0 Định dạng file không được hỗ trợ. Vui lòng gửi ảnh hoặc video kèm nội dung.")
+        return CONTENT_IMAGE
     else:
         data['media'] = None
         await update.message.reply_text("\u26a0 Không tìm thấy ảnh hoặc video. Vui lòng gửi lại kèm caption.")
@@ -99,10 +102,10 @@ if __name__ == "__main__":
 
         # Conversation handler
         conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("newpost", start)],
+            entry_points=[CommandHandler(["start", "newpost"], start)],
             states={
                 TITLE: [MessageHandler(filters.TEXT, title)],
-                CONTENT_IMAGE: [MessageHandler(filters.PHOTO | filters.VIDEO, content_image)],
+                CONTENT_IMAGE: [MessageHandler(filters.PHOTO | filters.VIDEO | filters.Document.ALL, content_image)],
                 HASHTAGS: [MessageHandler(filters.TEXT, hashtags)],
                 CONFIRM: [MessageHandler(filters.TEXT, confirm)],
             },
