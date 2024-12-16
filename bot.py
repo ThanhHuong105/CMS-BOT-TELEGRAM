@@ -15,7 +15,7 @@ data = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Bot đã nhận lệnh /start.")  # Log xác nhận
     await update.message.reply_text(
-        "\ud83d\udccb *Tạo bài viết mới*\n\ud83d\udcdd *Tiêu đề*: Hãy nhập tiêu đề bài viết.",
+        "📋 *Tạo bài viết mới*\n📝 *Tiêu đề*: Hãy nhập tiêu đề bài viết.",
         parse_mode=ParseMode.MARKDOWN
     )
     return TITLE
@@ -24,7 +24,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def title(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['title'] = update.message.text
     await update.message.reply_text(
-        "\ud83d\udcdd *Nội dung và ảnh/video chi tiết*:\n"
+        "📝 *Nội dung và ảnh/video chi tiết*:\n"
         "Hãy gửi nội dung và kèm ảnh/video trong cùng một tin nhắn (caption).",
         parse_mode=ParseMode.MARKDOWN
     )
@@ -38,11 +38,11 @@ async def content_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.message.video:
         data['media'] = InputMediaVideo(update.message.video.file_id, caption=data['content'])
     else:
-        await update.message.reply_text("\u26a0 Vui lòng gửi ảnh hoặc video kèm nội dung.")
+        await update.message.reply_text("⚠️ Vui lòng gửi ảnh hoặc video kèm nội dung.")
         return CONTENT_IMAGE
 
     await update.message.reply_text(
-        "\ud83d\udd16 *Hashtags*: Nhập hashtags của bạn (cách nhau bằng dấu phẩy).",
+        "🔖 *Hashtags*: Nhập hashtags của bạn (cách nhau bằng dấu phẩy).",
         parse_mode=ParseMode.MARKDOWN
     )
     return HASHTAGS
@@ -51,27 +51,31 @@ async def content_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def hashtags(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['hashtags'] = update.message.text
     if 'media' in data:
-        caption = f"\ud83d\udccb *Bản xem trước:*\n\ud83d\udcdd *Tiêu đề*: {data['title']}\n\ud83d\udd16 *Hashtags*: {data['hashtags']}"
+        caption = f"📋 *Bản xem trước:*\n📝 *Tiêu đề*: {data['title']}\n🔖 *Hashtags*: {data['hashtags']}"
         data['media'].caption = caption
         await update.message.reply_media_group([data['media']])
     else:
-        await update.message.reply_text("\u26a0 Lỗi khi xử lý nội dung. Vui lòng thử lại!")
+        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện.")
 
-    await update.message.reply_text("\u2705 Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
+    await update.message.reply_text("✅ Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
     return CONFIRM
 
 # Xác nhận lưu bài viết
 async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() == "xong":
-        await update.message.reply_text("\ud83c\udf89 Bài viết đã được lưu trữ thành công! \ud83d\udcbe")
+        await update.message.reply_text("🎉 Bài viết đã được lưu trữ thành công! 💾")
     else:
-        await update.message.reply_text("\u26a0 Bài viết đã bị hủy.")
+        await update.message.reply_text("❌ Bài viết đã bị hủy.")
     return ConversationHandler.END
 
 # Hủy thao tác
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("\u26a0 Hủy tạo bài viết.")
+    await update.message.reply_text("❌ Hủy tạo bài viết.")
     return ConversationHandler.END
+
+# Xử lý lệnh không xác định
+async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Lệnh không hợp lệ. Hãy gửi /start để bắt đầu!")
 
 # Khởi chạy bot
 if __name__ == "__main__":
@@ -91,6 +95,7 @@ if __name__ == "__main__":
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(MessageHandler(filters.COMMAND, unknown))  # Xử lý lệnh không xác định
 
     print("Bot đang chạy... Hãy gửi lệnh /start để bắt đầu.")
     app.run_polling()
