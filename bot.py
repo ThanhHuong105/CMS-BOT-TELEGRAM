@@ -1,17 +1,9 @@
-# Placeholder import for telegram modules due to environment restrictions
-try:
-    from telegram import Update, InputMediaPhoto, InputMediaVideo
-    from telegram.ext import (ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, ConversationHandler)
-    from telegram.constants import ParseMode
-except ModuleNotFoundError:
-    print("\u26a0 Môi trường không hỗ trợ 'telegram'. Vui lòng kiểm tra việc cài đặt thư viện hoặc sử dụng môi trường khác.")
-    Update = None
-    ApplicationBuilder = None
-    CommandHandler = None
-    MessageHandler = None
-    ContextTypes = None
-    filters = None
-    ConversationHandler = None
+from telegram import Update, InputMediaPhoto, InputMediaVideo
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes,
+    filters, ConversationHandler
+)
+from telegram.constants import ParseMode
 
 # Trạng thái của form
 TITLE, CONTENT_IMAGE, HASHTAGS, CONFIRM = range(4)
@@ -19,100 +11,91 @@ TITLE, CONTENT_IMAGE, HASHTAGS, CONFIRM = range(4)
 # Khởi động form
 data = {}
 
-def placeholder_function():
-    print("\u26a0 Bot không thể chạy do thiếu thư viện 'telegram'.")
-
-async def start(update, context):
-    if Update is None:
-        placeholder_function()
-        return ConversationHandler.END
+# Bắt đầu form
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("Bot đã nhận lệnh /start.")  # Log xác nhận
     await update.message.reply_text(
-        "\ud83d\udccb *Tạo bài viết mới*\n\ud83d\udcdd *Tiêu đề*: Hãy nhập tiêu đề bài viết",
-        parse_mode=ParseMode.MARKDOWN)
+        "📋 *Tạo bài viết mới*\n📝 *Tiêu đề*: Hãy nhập tiêu đề bài viết.",
+        parse_mode=ParseMode.MARKDOWN
+    )
     return TITLE
 
 # Nhập tiêu đề
-async def title(update, context):
+async def title(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['title'] = update.message.text
     await update.message.reply_text(
-        "\ud83d\udcdd *Nội dung và ảnh/video chi tiết*:\n"
-        "Gửi nội dung văn bản cùng ảnh/video trong *một tin nhắn* (dùng caption).",
-        parse_mode=ParseMode.MARKDOWN)
+        "📝 *Nội dung và ảnh/video chi tiết*:\n"
+        "Hãy gửi nội dung và kèm ảnh/video trong cùng một tin nhắn (caption).",
+        parse_mode=ParseMode.MARKDOWN
+    )
     return CONTENT_IMAGE
 
-# Nhập nội dung kèm hình/video
-async def content_image(update, context):
-    # Lấy caption từ ảnh hoặc video
+# Nhập nội dung kèm ảnh/video
+async def content_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['content'] = update.message.caption if update.message.caption else "(Không có nội dung)"
     if update.message.photo:
-        data['media'] = InputMediaPhoto(update.message.photo[-1].file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
+        data['media'] = InputMediaPhoto(update.message.photo[-1].file_id, caption=data['content'])
     elif update.message.video:
-        data['media'] = InputMediaVideo(update.message.video.file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
-    elif update.message.document:
-        await update.message.reply_text("\u26a0 Định dạng file không được hỗ trợ. Vui lòng gửi ảnh hoặc video kèm nội dung.")
-        return CONTENT_IMAGE
+        data['media'] = InputMediaVideo(update.message.video.file_id, caption=data['content'])
     else:
-        data['media'] = None
-        await update.message.reply_text("\u26a0 Không tìm thấy ảnh hoặc video. Vui lòng gửi lại kèm caption.")
+        await update.message.reply_text("⚠️ Vui lòng gửi ảnh hoặc video kèm nội dung.")
         return CONTENT_IMAGE
 
     await update.message.reply_text(
-        "\ud83d\udd16 *Hashtags*:\nNhập hashtags của bạn, cách nhau bằng dấu phẩy.",
-        parse_mode=ParseMode.MARKDOWN)
+        "🔖 *Hashtags*: Nhập hashtags của bạn (cách nhau bằng dấu phẩy).",
+        parse_mode=ParseMode.MARKDOWN
+    )
     return HASHTAGS
 
-# Nhập Hashtags
-async def hashtags(update, context):
+# Nhập hashtags
+async def hashtags(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['hashtags'] = update.message.text
-    if data['media']:
-        data['media'].caption += f"\n\ud83d\udd16 *Hashtags*: {data['hashtags']}"
+    if 'media' in data:
+        caption = f"📋 *Bản xem trước:*\n📝 *Tiêu đề*: {data['title']}\n🔖 *Hashtags*: {data['hashtags']}"
+        data['media'].caption = caption
         await update.message.reply_media_group([data['media']])
     else:
-        await update.message.reply_text(
-            f"\ud83d\udccb *Bản xem trước:*\n"
-            f"\ud83d\udcdd *Tiêu đề*: {data['title']}\n"
-            f"\ud83d\udcdd *Nội dung*: {data['content']}\n"
-            f"\ud83d\udd16 *Hashtags*: {data['hashtags']}",
-            parse_mode=ParseMode.MARKDOWN)
-    
-    await update.message.reply_text("\u2705 Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
+        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện.")
+
+    await update.message.reply_text("✅ Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
     return CONFIRM
 
-# Xác nhận
-async def confirm(update, context):
+# Xác nhận lưu bài viết
+async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() == "xong":
-        await update.message.reply_text("\ud83c\udf89 Bài viết đã được tạo và lưu trữ! \ud83d\udcbe")
-        # Logic lưu dữ liệu sẽ thêm tại đây
+        await update.message.reply_text("🎉 Bài viết đã được lưu trữ thành công! 💾")
     else:
-        await update.message.reply_text("\u26a0 Bài viết đã bị hủy.")
+        await update.message.reply_text("❌ Bài viết đã bị hủy.")
     return ConversationHandler.END
 
-# Hủy
-async def cancel(update, context):
-    await update.message.reply_text("\u26a0 Hủy tạo bài viết.")
+# Hủy thao tác
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Hủy tạo bài viết.")
     return ConversationHandler.END
+
+# Xử lý lệnh không xác định
+async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Lệnh không hợp lệ. Hãy gửi /start để bắt đầu!")
 
 # Khởi chạy bot
 if __name__ == "__main__":
-    if ApplicationBuilder is None:
-        placeholder_function()
-    else:
-        TOKEN = "7925656043:AAEbWFSv7_9WlWi78Hxw6Z5jigY2KgvAeg4"
-        app = ApplicationBuilder().token(TOKEN).build()
+    TOKEN = "7925656043:AAEbWFSv7_9WlWi78Hxw6Z5jigY2KgvAeg4"
+    app = ApplicationBuilder().token(TOKEN).build()
 
-        # Conversation handler
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler(["start", "newpost"], start)],
-            states={
-                TITLE: [MessageHandler(filters.TEXT, title)],
-                CONTENT_IMAGE: [MessageHandler(filters.PHOTO | filters.VIDEO | filters.Document.ALL, content_image)],
-                HASHTAGS: [MessageHandler(filters.TEXT, hashtags)],
-                CONFIRM: [MessageHandler(filters.TEXT, confirm)],
-            },
-            fallbacks=[CommandHandler("cancel", cancel)],
-        )
+    # Conversation handler
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            TITLE: [MessageHandler(filters.TEXT, title)],
+            CONTENT_IMAGE: [MessageHandler(filters.PHOTO | filters.VIDEO, content_image)],
+            HASHTAGS: [MessageHandler(filters.TEXT, hashtags)],
+            CONFIRM: [MessageHandler(filters.TEXT, confirm)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
 
-        app.add_handler(conv_handler)
+    app.add_handler(conv_handler)
+    app.add_handler(MessageHandler(filters.COMMAND, unknown))  # Xử lý lệnh không xác định
 
-        print("Bot đang chạy...")
-        app.run_polling()
+    print("Bot đang chạy... Hãy gửi lệnh /start để bắt đầu.")
+    app.run_polling()
