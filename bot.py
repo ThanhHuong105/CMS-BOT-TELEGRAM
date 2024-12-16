@@ -56,6 +56,7 @@ async def hashtags(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_media_group([data['media']])
     else:
         await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện.")
+        return HASHTAGS  # Quay lại nhập hashtags nếu lỗi
 
     await update.message.reply_text("✅ Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
     return CONFIRM
