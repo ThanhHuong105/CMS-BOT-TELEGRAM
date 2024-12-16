@@ -50,20 +50,18 @@ async def content_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Nhập hashtags
 async def hashtags(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data['hashtags'] = update.message.text
+    caption = f"📋 *Bản xem trước:*\n📝 *Tiêu đề*: {data['title']}\n🔖 *Hashtags*: {data['hashtags']}"
+
+    # Gửi bản xem trước
     if 'media' in data:
-        caption = f"📋 *Bản xem trước:*\n📝 *Tiêu đề*: {data['title']}\n🔖 *Hashtags*: {data['hashtags']}"
-        data['media'].caption = caption
-        
-        # Gửi bản xem trước với caption
-        try:
-            await update.message.reply_media_group([data['media']])
-        except Exception as e:
-            print(f"Lỗi khi gửi media: {e}")
-            await update.message.reply_text("⚠️ Gửi bản xem trước thất bại. Vui lòng thử lại!")
-            return HASHTAGS  # Quay lại nhập hashtags nếu lỗi
+        await update.message.reply_text("📋 *Bản xem trước:*", parse_mode=ParseMode.MARKDOWN)
+        if isinstance(data['media'], InputMediaPhoto):
+            await update.message.reply_photo(photo=data['media'].media, caption=caption, parse_mode=ParseMode.MARKDOWN)
+        elif isinstance(data['media'], InputMediaVideo):
+            await update.message.reply_video(video=data['media'].media, caption=caption, parse_mode=ParseMode.MARKDOWN)
     else:
-        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện. Vui lòng gửi lại!")
-        return CONTENT_IMAGE
+        await update.message.reply_text("⚠️ Không tìm thấy nội dung đa phương tiện. Vui lòng thử lại!")
+        return CONTENT_IMAGE  # Quay lại bước nhập nội dung
 
     # Chuyển sang bước xác nhận
     await update.message.reply_text("✅ Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
