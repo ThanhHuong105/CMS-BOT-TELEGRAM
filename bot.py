@@ -66,7 +66,8 @@ async def hashtags(update, context):
         await update.message.reply_media_group([data['media']])
     else:
         await update.message.reply_text(
-            f"\ud83d\udccb *Bản xem trước:*\n\ud83d\udcdd *Tiêu đề*: {data['title']}\n"
+            f"\ud83d\udccb *Bản xem trước:*
+\ud83d\udcdd *Tiêu đề*: {data['title']}\n"
             f"\ud83d\udcdd *Nội dung*: {data['content']}\n"
             f"\ud83d\udd16 *Hashtags*: {data['hashtags']}",
             parse_mode=ParseMode.MARKDOWN)
