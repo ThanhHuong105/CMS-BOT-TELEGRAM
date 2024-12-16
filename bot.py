@@ -14,7 +14,7 @@ except ModuleNotFoundError:
     ConversationHandler = None
 
 # Trạng thái của form
-TITLE, CONTENT_IMAGE, COVER, HASHTAGS, CONFIRM = range(5)
+TITLE, CONTENT_IMAGE, HASHTAGS, CONFIRM = range(4)
 
 # Khởi động form
 data = {}
@@ -35,60 +35,42 @@ async def start(update, context):
 async def title(update, context):
     data['title'] = update.message.text
     await update.message.reply_text(
-        "\ud83d\udcdd *Nội dung và hình ảnh/video chi tiết*:\n"
-        "Gửi nội dung và ảnh/video kèm caption trong cùng một tin nhắn.",
+        "\ud83d\udcdd *Nội dung và ảnh/video chi tiết*:\n"
+        "Gửi nội dung văn bản cùng ảnh/video trong *một tin nhắn* (dùng caption).",
         parse_mode=ParseMode.MARKDOWN)
     return CONTENT_IMAGE
 
 # Nhập nội dung kèm hình/video
 async def content_image(update, context):
+    # Lấy caption từ ảnh hoặc video
     data['content'] = update.message.caption if update.message.caption else "(Không có nội dung)"
     if update.message.photo:
-        data['content_image'] = update.message.photo[-1].file_id
+        data['media'] = InputMediaPhoto(update.message.photo[-1].file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
     elif update.message.video:
-        data['content_image'] = update.message.video.file_id
+        data['media'] = InputMediaVideo(update.message.video.file_id, caption=data['content'], parse_mode=ParseMode.MARKDOWN)
     else:
-        data['content_image'] = None
+        data['media'] = None
+        await update.message.reply_text("\u26a0 Không tìm thấy ảnh hoặc video. Vui lòng gửi lại kèm caption.")
+        return CONTENT_IMAGE
 
     await update.message.reply_text(
-        "\ud83d\uddbc *Hình ảnh/Video Cover*:\nGửi file hoặc paste link cho ảnh bìa",
-        parse_mode=ParseMode.MARKDOWN)
-    return COVER
-
-# Nhập hình ảnh Cover
-async def cover(update, context):
-    if update.message.photo:
-        data['cover'] = update.message.photo[-1].file_id
-    elif update.message.video:
-        data['cover'] = update.message.video.file_id
-    else:
-        data['cover'] = update.message.text
-
-    await update.message.reply_text(
-        "\ud83d\udd16 *Hashtags*:\nBot gợi ý: #example, #bot. Nhập hashtags của bạn (cách nhau bằng dấu phẩy)",
+        "\ud83d\udd16 *Hashtags*:\nNhập hashtags của bạn, cách nhau bằng dấu phẩy.",
         parse_mode=ParseMode.MARKDOWN)
     return HASHTAGS
 
 # Nhập Hashtags
 async def hashtags(update, context):
     data['hashtags'] = update.message.text
-    media = [
-        InputMediaPhoto(data['content_image'], caption=f"\ud83d\udccb *Bản xem trước:*\n"
-                         f"\ud83d\udcdd *Tiêu đề*: {data['title']}\n"
-                         f"\ud83d\udcdd *Nội dung*: {data['content']}\n"
-                         f"\ud83d\udd16 *Hashtags*: {data['hashtags']}",
-                         parse_mode=ParseMode.MARKDOWN)
-    ] if data['content_image'] else None
-
-    if media:
-        await update.message.reply_media_group(media=media)
+    if data['media']:
+        data['media'].caption += f"\n\ud83d\udd16 *Hashtags*: {data['hashtags']}"
+        await update.message.reply_media_group([data['media']])
     else:
         await update.message.reply_text(
             f"\ud83d\udccb *Bản xem trước:*\n\ud83d\udcdd *Tiêu đề*: {data['title']}\n"
             f"\ud83d\udcdd *Nội dung*: {data['content']}\n"
             f"\ud83d\udd16 *Hashtags*: {data['hashtags']}",
             parse_mode=ParseMode.MARKDOWN)
-
+    
     await update.message.reply_text("\u2705 Gửi 'Xong' để xác nhận hoặc 'Hủy' để bỏ qua.")
     return CONFIRM
 
@@ -96,7 +78,7 @@ async def hashtags(update, context):
 async def confirm(update, context):
     if update.message.text.lower() == "xong":
         await update.message.reply_text("\ud83c\udf89 Bài viết đã được tạo và lưu trữ! \ud83d\udcbe")
-        # Gửi dữ liệu lên Google Sheets tại đây
+        # Logic lưu dữ liệu sẽ thêm tại đây
     else:
         await update.message.reply_text("\u26a0 Bài viết đã bị hủy.")
     return ConversationHandler.END
@@ -120,7 +102,6 @@ if __name__ == "__main__":
             states={
                 TITLE: [MessageHandler(filters.TEXT, title)],
                 CONTENT_IMAGE: [MessageHandler(filters.PHOTO | filters.VIDEO, content_image)],
-                COVER: [MessageHandler(filters.PHOTO | filters.VIDEO | filters.TEXT, cover)],
                 HASHTAGS: [MessageHandler(filters.TEXT, hashtags)],
                 CONFIRM: [MessageHandler(filters.TEXT, confirm)],
             },
@@ -129,5 +110,5 @@ if __name__ == "__main__":
 
         app.add_handler(conv_handler)
 
-        print("Bot dang chay...")
+        print("Bot đang chạy...")
         app.run_polling()
